@@ -1,0 +1,18 @@
+#
+# rrp v1.0 - rres project text file generated using rrespacker
+#
+# File info expected structure:
+# f <fileFullPath@mappingFileName>,<external-link>,<force-raw>,<custom-id>,<compressor>,<cipher>
+#
+# Number of files:     10
+#
+f /.glfw_dropped_files/Background_FrontYard.png@Background_FrontYard.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/ElectricPeashooter.png@ElectricPeashooter.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/FirePeashooter.png@FirePeashooter.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/PeaProjectile.png@PeaProjectile.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/Peashooter.png@Peashooter.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/Peashooter_Idle.png@Peashooter_Idle.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/SnowPea.png@SnowPea.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/Sun.png@Sun.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/Sunflower.png@Sunflower.png,0,1,0x00000000,0,0
+f /.glfw_dropped_files/Sunflower_Idle.png@Sunflower_Idle.png,0,1,0x00000000,0,0
