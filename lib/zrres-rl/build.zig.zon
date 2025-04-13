@@ -6,7 +6,7 @@
     //
     // It is redundant to include "zig" in this name because it is already
     // within the Zig package namespace.
-    .name = .pvz_fangame,
+    .name = .zrres_rl,
 
     // This is a [Semantic Version](https://semver.org/).
     // In a future version of Zig it will be used for package deduplication.
@@ -24,7 +24,7 @@
     // original project's identity. Thus it is recommended to leave the comment
     // on the following line intact, so that it shows up in code reviews that
     // modify the field.
-    .fingerprint = 0x88da3c7d14ea3d4d, // Changing this has security and trust implications.
+    .fingerprint = 0x731a973c5e7f5a61, // Changing this has security and trust implications.
 
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
@@ -36,17 +36,23 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
+        .zrres = .{
+            .path = "../zrres",
+        },
         .raylib_zig = .{
             .url = "git+https://github.com/Not-Nik/raylib-zig?ref=devel#d6c77762cbdebbf56d3ff101142048dfae2496c4",
             .hash = "raylib_zig-5.6.0-dev-KE8REBMyBQCnQ9RBhHsoSKr97XmDHF84wx3g0UiMRDxj",
         },
-        .zrres = .{
-            .path = "lib/zrres",
-        },
-        .zrres_rl = .{
-            .path = "lib/zrres-rl",
-        },
     },
+
+    // Specifies the set of files and directories that are included in this package.
+    // Only files and directories listed here are included in the `hash` that
+    // is computed for this package. Only files listed here will remain on disk
+    // when using the zig package manager. As a rule of thumb, one should list
+    // files required for compilation plus any license(s).
+    // Paths are relative to the build root. Use the empty string (`""`) to refer to
+    // the build root itself.
+    // A directory listed here means that all files within, recursively, are included.
     .paths = .{
         "build.zig",
         "build.zig.zon",

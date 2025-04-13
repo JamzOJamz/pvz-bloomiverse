@@ -1,19 +1,21 @@
 const rl = @import("raylib");
+const rres = @import("zrres");
+const rres_rl = @import("zrres_rl");
 
 const draw_utils = @import("utils/draw_utils.zig");
 
-const c = @cImport({
-    @cInclude("rres.h");
-    @cInclude("raylib.h");
-    @cInclude("rres-raylib.h");
-});
+//const c = @cImport({
+//    @cInclude("rres.h");
+//    @cInclude("raylib.h");
+//    @cInclude("rres-raylib.h");
+//});
 
 pub fn main() !void {
     // Initialization
     //--------------------------------------------------------------------------------------
-    const scale_factor = 4.0;
-    const base_width = 480;
-    const base_height = 270;
+    const scale_factor = 3.0;
+    const base_width = 544;
+    const base_height = 306;
     const screen_width = base_width * scale_factor;
     const screen_height = base_height * scale_factor;
     const square_size: f32 = 32.0;
@@ -22,18 +24,16 @@ pub fn main() !void {
     rl.initWindow(screen_width, screen_height, "Plants vs. Zombies: Multiverse");
     defer rl.closeWindow(); // Close window and OpenGL context
 
-    const asset_dir = c.rresLoadCentralDirectory("resources.rres");
-    defer c.rresUnloadCentralDirectory(asset_dir);
+    const asset_dir = rres.rresLoadCentralDirectory("resources.rres");
+    defer rres.rresUnloadCentralDirectory(asset_dir);
 
-    const background_front_yard_id = c.rresGetResourceId(asset_dir, "Background_FrontYard.png");
-    const background_front_yard = c.rresLoadResourceChunk("resources.rres", background_front_yard_id);
-    defer c.rresUnloadResourceChunk(background_front_yard);
-    //const success = c.UnpackResourceChunk(&background_front_yard);
-    //_ = success; // autofix
-
-    const image = @as(*rl.Image, @ptrFromInt(@intFromPtr(&c.LoadImageFromResource(background_front_yard)))).*;
-    const texture = try rl.loadTextureFromImage(image);
-    defer rl.unloadTexture(texture);
+    const background_id = rres.rresGetResourceId(asset_dir, "images\\background_1.png");
+    var background = rres.rresLoadResourceChunk("resources.rres", background_id);
+    defer rres.rresUnloadResourceChunk(background);
+    _ = rres_rl.unpackResourceChunk(&background);
+    const image = rres_rl.loadImageFromResource(background);
+    const background_texture = try rl.loadTextureFromImage(image);
+    defer rl.unloadTexture(background_texture);
     rl.unloadImage(image);
 
     rl.setTargetFPS(144); // Set our game to run at 60 frames-per-second
@@ -47,13 +47,13 @@ pub fn main() !void {
         .zoom = scale_factor,
     };
 
-    const sun_texture = try rl.loadTexture("Sun.png");
+    const sun_texture = try rl.loadTexture("resources/images/sun.png");
     defer rl.unloadTexture(sun_texture);
 
-    const sunflower_idle_texture = try rl.loadTexture("Sunflower_Idle.png");
+    const sunflower_idle_texture = try rl.loadTexture("resources/images/sunflower_idle.png");
     defer rl.unloadTexture(sunflower_idle_texture);
 
-    const peashooter_idle_texture = try rl.loadTexture("Peashooter_Idle.png");
+    const peashooter_idle_texture = try rl.loadTexture("resources/images/peashooter_idle.png");
     defer rl.unloadTexture(peashooter_idle_texture);
 
     // Debug variables for the sun rotation
@@ -91,8 +91,8 @@ pub fn main() !void {
 
         // Draw the background texture
         rl.drawTexture(
-            texture,
-            0,
+            background_texture,
+            -93,
             0,
             .white,
         );
@@ -106,11 +106,13 @@ pub fn main() !void {
                 // Alternate squares: only draw a square if (i+j) is even.
                 if ((i + j) % 2 == 0) {
                     const x: f32 = @as(f32, @floatFromInt(i)) * square_size - checkered_offset;
+                    _ = x; // autofix
                     const y: f32 = @as(f32, @floatFromInt(j)) * square_size - checkered_offset;
-                    rl.drawRectangleRec(
-                        .{ .x = x, .y = y, .width = square_size, .height = square_size },
-                        .init(188, 153, 147, 255),
-                    );
+                    _ = y; // autofix
+                    //rl.drawRectangleRec(
+                    //    .{ .x = x, .y = y, .width = square_size, .height = square_size },
+                    //    .init(188, 153, 147, 255),
+                    //);
                 }
             }
         }

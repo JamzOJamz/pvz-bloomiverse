@@ -15,13 +15,19 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    // This is a dependency that is shared between the game and the asset packer tool.
+    const zrres = b.dependency("zrres", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // We will also create a module for our other entry point, 'main.zig'.
     const exe_mod = b.createModule(.{
         // `root_source_file` is the Zig "entry point" of the module. If a module
         // only contains e.g. external object files, you can make this `null`.
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/game/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -29,7 +35,7 @@ pub fn build(b: *std.Build) void {
     // This creates another `std.Build.Step.Compile`, but this one builds an executable
     // rather than a static library.
     const exe = b.addExecutable(.{
-        .name = "pvz_fangame",
+        .name = "multiverse",
         .root_module = exe_mod,
     });
 
@@ -39,21 +45,27 @@ pub fn build(b: *std.Build) void {
     });
 
     const raylib = raylib_dep.module("raylib"); // main raylib module
-    const raygui = raylib_dep.module("raygui"); // raygui module
     const raylib_artifact = raylib_dep.artifact("raylib"); // raylib C library
 
     exe.linkLibrary(raylib_artifact);
     exe.root_module.addImport("raylib", raylib);
-    exe.root_module.addImport("raygui", raygui);
 
-    exe.addIncludePath(b.path("lib/rres"));
-    exe.addCSourceFiles(
-        .{
-            .files = &[_][]const u8{
-                "lib/rres/rres_impl.c",
-            },
-        },
-    );
+    exe.root_module.addImport("zrres", zrres.module("root"));
+
+    const zrres_rl = b.dependency("zrres_rl", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.root_module.addImport("zrres_rl", zrres_rl.module("root"));
+
+    //exe.addIncludePath(b.path("lib/rres"));
+    //exe.addCSourceFiles(
+    //    .{
+    //        .files = &[_][]const u8{
+    //            "lib/rres/rres_impl.c",
+    //        },
+    //    },
+    //);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -82,4 +94,24 @@ pub fn build(b: *std.Build) void {
     // This will evaluate the `run` step rather than the default, which is "install".
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+
+    const pack_assets_mod = b.createModule(.{
+        .root_source_file = b.path("src/pack/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const pack_assets = b.addExecutable(.{
+        .name = "pack_assets",
+        .root_module = pack_assets_mod,
+    });
+    pack_assets.root_module.addImport("zrres", zrres.module("root"));
+
+    b.installArtifact(pack_assets);
+
+    const pack_assets_run_cmd = b.addRunArtifact(pack_assets);
+    pack_assets_run_cmd.step.dependOn(b.getInstallStep());
+
+    const pack_step = b.step("pack-assets", "Pack assets to .rres file");
+    pack_step.dependOn(&pack_assets_run_cmd.step);
 }
