@@ -9,20 +9,23 @@ const Self = @This();
 cd: rres.CentralDir,
 rres_path: [:0]const u8,
 loaded_texture_ids: std.ArrayList(u32),
+loaded_shaders: std.ArrayList(rl.Shader),
 
 pub fn init(ally: std.mem.Allocator, rres_path: [:0]const u8) Self {
     return Self{
         .cd = rres.loadCentralDirectory(rres_path),
         .rres_path = rres_path,
         .loaded_texture_ids = std.ArrayList(u32).init(ally),
+        .loaded_shaders = std.ArrayList(rl.Shader).init(ally),
     };
 }
 
-pub fn request(self: *Self, comptime T: type, path: [:0]const u8) !?T {
+pub fn request(self: *Self, comptime T: type, path: [:0]const u8) !T {
     const id = rres.getResourceId(self.cd, path);
+    if (id == 0) return error.ResourceNotFound;
     var chunk = rres.loadResourceChunk(self.rres_path, id);
     defer rres.unloadResourceChunk(chunk);
-    if (rres_rl.unpackResourceChunk(&chunk) != 0) return null;
+    if (rres_rl.unpackResourceChunk(&chunk) != 0) return error.UnpackError;
 
     switch (T) {
         rl.Texture => |_| {
@@ -32,7 +35,23 @@ pub fn request(self: *Self, comptime T: type, path: [:0]const u8) !?T {
             try self.loaded_texture_ids.append(texture.id);
             return texture;
         },
-        else => return null,
+        rl.Shader => |_| {
+            const source = rres_rl.loadTextFromResource(chunk);
+            defer rl.memFree(@ptrCast(source));
+            const shader = try rl.loadShaderFromMemory(null, std.mem.span(source));
+            try self.loaded_shaders.append(shader);
+            return shader;
+        },
+        rl.Sound => |_| {
+            var data_size: u32 = 0;
+            const raw_data = rres_rl.loadDataFromResource(chunk, &data_size);
+            defer rl.memFree(@ptrCast(raw_data));
+            const wave = try rl.loadWaveFromMemory(".wav", raw_data[0..data_size]);
+            defer rl.unloadWave(wave);
+            const sound = rl.loadSoundFromWave(wave);
+            return sound;
+        },
+        else => return error.InvalidResourceType,
     }
 }
 
@@ -48,6 +67,12 @@ pub fn deinit(self: *Self) void {
         });
     }
     self.loaded_texture_ids.deinit();
+
+    // Unload all shaders that were loaded
+    for (self.loaded_shaders.items) |shader| {
+        rl.unloadShader(shader);
+    }
+    self.loaded_shaders.deinit();
 
     rres.unloadCentralDirectory(self.cd);
 }
