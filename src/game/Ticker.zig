@@ -8,7 +8,7 @@ accumulator: f64 = 0,
 //per_second_accumulator: f64 = 0,
 fixed_update_fn: *const fn () anyerror!void,
 render_update_fn: *const fn (f32) void,
-draw_fn: *const fn (f32) void,
+draw_fn: *const fn (f32) anyerror!void,
 
 pub fn step(self: *Self) !void {
     const new_time = rl.getTime();
@@ -26,5 +26,5 @@ pub fn step(self: *Self) !void {
     const alpha: f32 = @floatCast(self.accumulator / self.fixed_dt);
 
     self.render_update_fn(alpha);
-    self.draw_fn(alpha);
+    try self.draw_fn(alpha);
 }

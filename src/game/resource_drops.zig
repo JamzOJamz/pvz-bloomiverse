@@ -48,7 +48,7 @@ pub fn tick() !void {
         };
         const initial_velocity = rl.Vector2{
             .x = 0.0,
-            .y = 19.4 / 60.0,
+            .y = 25.1 / 60.0,
         };
         try game.newSun(.init(.sky, spawn_position, initial_velocity, ai_natural_sun));
     }

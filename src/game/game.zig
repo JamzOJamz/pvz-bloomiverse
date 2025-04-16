@@ -14,8 +14,11 @@ const Ticker = @import("Ticker.zig");
 const draw_utils = @import("utils/draw_utils.zig");
 const utils = @import("utils/utils.zig");
 
+/// True if the program is running in debug mode, false otherwise.
+const dbg = @import("builtin").mode == .Debug;
+
 const target_fps = 300;
-const window_title = "Plants vs. Zombies: Multiverse";
+const window_title = "Plants vs. Zombies: Bloomiverse";
 const clear_color = rl.Color.init(201, 160, 147, 255);
 const base_resolution = rl.Vector2{ .x = 544.0, .y = 306.0 };
 const scale_factor = 3;
@@ -27,6 +30,7 @@ const front_yard_grid = Grid{
     .spacing = .{ .x = 34.0, .y = 43.0 },
     .start = .{ .x = 137.0, .y = 76.0 },
 };
+
 var allocator: std.mem.Allocator = undefined;
 var asset_dir: AssetDirectory = undefined;
 var camera: rl.Camera2D = undefined;
@@ -39,6 +43,7 @@ var sunflower_idle_texture: rl.Texture = undefined;
 var peashooter_idle_texture: rl.Texture = undefined;
 var screen_blend_shader: rl.Shader = undefined;
 var points_sound: SoundPool = undefined;
+var grasswalk_music: rl.Music = undefined;
 
 pub fn init() !void {
     allocator = std.heap.page_allocator;
@@ -64,14 +69,19 @@ pub fn init() !void {
 
 pub fn run() !void {
     // Initialize Raylib
+    if (!dbg) rl.setTraceLogLevel(.none);
     rl.initWindow(screen_width, screen_height, window_title);
     defer rl.closeWindow();
     rl.setTargetFPS(target_fps);
     rl.initAudioDevice();
+    rl.setAudioStreamBufferSizeDefault(4096);
     defer rl.closeAudioDevice();
 
     // Load the game content
     try loadContent();
+
+    // Start the music stream
+    rl.playMusicStream(grasswalk_music);
 
     // Create the ticker to handle the game loop
     var ticker = Ticker{
@@ -97,6 +107,9 @@ pub fn loadContent() !void {
 
     // Load sounds
     points_sound = try SoundPool.create(allocator, try asset_dir.request(rl.Sound, "sounds\\points.wav"), 4);
+
+    // Load music
+    grasswalk_music = try asset_dir.request(rl.Music, "sounds\\music\\grasswalk.ogg");
 }
 
 pub fn fixedUpdate() !void {
@@ -108,7 +121,11 @@ pub fn fixedUpdate() !void {
 
         // Despawn suns that have been on the screen for too long
         s.time_left -= 1;
-        if (s.time_left <= 0) {
+        if (s.time_left <= Sun.fade_out_ticks and s.time_left > 0) {
+            s.alpha = @as(u8, @intFromFloat(
+                @as(f32, @floatFromInt(s.time_left)) / Sun.fade_out_ticks * Sun.starting_alpha,
+            ));
+        } else if (s.time_left <= 0) {
             _ = sun.orderedRemove(i);
             continue;
         }
@@ -133,6 +150,7 @@ pub fn fixedUpdate() !void {
 }
 
 pub fn renderUpdate(alpha: f32) void {
+    rl.updateMusicStream(grasswalk_music);
     input.readInputs();
     handleSunCollection(alpha);
 }
@@ -146,7 +164,9 @@ fn handleSunCollection(alpha: f32) void {
         i -= 1;
         const s = &sun.items[i];
 
-        const interpolated_position = s.last_position.lerp(s.position, alpha);
+        if (!s.isCollectable()) continue;
+
+        const interpolated_position = s.getDrawPosition(alpha) orelse continue;
         if (rl.checkCollisionPointCircle(
             mouse_pos,
             interpolated_position.addValue(sun_texture_half_size),
@@ -162,7 +182,7 @@ fn handleSunCollection(alpha: f32) void {
     }
 }
 
-pub fn draw(alpha: f32) void {
+pub fn draw(alpha: f32) !void {
     rl.beginDrawing();
     defer rl.endDrawing();
 
@@ -221,7 +241,7 @@ pub fn draw(alpha: f32) void {
         // Draw all active suns in the game
         for (sun.items) |s| {
             // Get interpolated position for smooth movement
-            const interpolated_position = s.last_position.lerp(s.position, alpha);
+            const interpolated_position = s.getDrawPosition(alpha) orelse continue;
 
             // Draw the sun texture
             draw_utils.drawAnimatedSprite(
@@ -230,13 +250,18 @@ pub fn draw(alpha: f32) void {
                 4,
                 1,
                 9.0,
-                .init(255, 255, 255, 205),
+                .init(255, 255, 255, s.alpha),
                 .zero(),
             );
         }
     }
 
-    //rl.drawText("Congrats! You created your first window!", 190, 200, 20, .black);
+    // Draw some status texts for debugging
+    var text_buf: [16]u8 = undefined;
+    const fps_text = try std.fmt.bufPrintZ(&text_buf, "FPS: {}", .{rl.getFPS()});
+    rl.drawText(fps_text, 4, 3, 10, .white);
+    const sun_text = try std.fmt.bufPrintZ(&text_buf, "Sun: {}", .{resources.getSun()});
+    rl.drawText(sun_text, 4, 14, 10, .white);
 }
 
 pub fn deinit() void {

@@ -29,6 +29,11 @@ pub fn build(b: *std.Build) void {
         .root_module = exe_mod,
     });
 
+    // Hide the console window on Windows in release builds.
+    if (optimize != .Debug) {
+        exe.subsystem = .Windows;
+    }
+
     const raylib_dep = b.dependency("raylib_zig", .{
         .target = target,
         .optimize = optimize,

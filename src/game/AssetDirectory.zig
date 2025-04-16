@@ -10,6 +10,7 @@ cd: rres.CentralDir,
 rres_path: [:0]const u8,
 loaded_texture_ids: std.ArrayList(u32),
 loaded_shaders: std.ArrayList(rl.Shader),
+loaded_music_data: std.ArrayList(*const u8),
 
 pub fn init(ally: std.mem.Allocator, rres_path: [:0]const u8) Self {
     return Self{
@@ -17,6 +18,7 @@ pub fn init(ally: std.mem.Allocator, rres_path: [:0]const u8) Self {
         .rres_path = rres_path,
         .loaded_texture_ids = std.ArrayList(u32).init(ally),
         .loaded_shaders = std.ArrayList(rl.Shader).init(ally),
+        .loaded_music_data = std.ArrayList(*const u8).init(ally),
     };
 }
 
@@ -51,11 +53,18 @@ pub fn request(self: *Self, comptime T: type, path: [:0]const u8) !T {
             const sound = rl.loadSoundFromWave(wave);
             return sound;
         },
+        rl.Music => |_| {
+            var data_size: u32 = 0;
+            const raw_data = rres_rl.loadDataFromResource(chunk, &data_size);
+            try self.loaded_music_data.append(raw_data);
+            const music = rl.loadMusicStreamFromMemory(".ogg", raw_data[0..data_size]);
+            return music;
+        },
         else => return error.InvalidResourceType,
     }
 }
 
-pub fn deinit(self: *Self) void {
+pub fn deinit(self: *const Self) void {
     // Unload all textures that were loaded
     for (self.loaded_texture_ids.items) |texture_id| {
         rl.unloadTexture(rl.Texture{
@@ -73,6 +82,11 @@ pub fn deinit(self: *Self) void {
         rl.unloadShader(shader);
     }
     self.loaded_shaders.deinit();
+
+    // Unload all music data that was loaded
+    for (self.loaded_music_data.items) |music_data| {
+        rl.memFree(@constCast(music_data));
+    }
 
     rres.unloadCentralDirectory(self.cd);
 }
