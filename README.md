@@ -1,6 +1,6 @@
 # Plants vs. Zombies: Bloomiverse
 
-**PvZ: Bloomiverse** is a fan-made reimagining of _Plants vs. Zombies_, built in [Zig](https://ziglang.org/) and utilizing [raylib](https://www.raylib.com/) for rendering. This project aims to recreate the charm of the original game while introducing new mechanics and enhancements.
+**PvZ: Bloomiverse** is a fan-made reimagining of _Plants vs. Zombies_, built in [Zig](https://github.com/ziglang/zig) and utilizing [raylib](https://github.com/raysan5/raylib) for rendering. This project aims to recreate the charm of the original game while introducing new mechanics and enhancements.
 
 ## 🚧 Project Status
 
