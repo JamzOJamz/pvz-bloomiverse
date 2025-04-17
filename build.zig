@@ -87,14 +87,13 @@ pub fn build(b: *std.Build) void {
         b.installArtifact(pack_assets);
 
         const pack_assets_run_cmd = b.addRunArtifact(pack_assets);
-        pack_assets_run_cmd.step.dependOn(b.getInstallStep());
 
         const pack_step = b.step("pack-assets", "Pack assets to .rres file");
         pack_step.dependOn(&pack_assets_run_cmd.step);
 
         // Ensure that assets are packed before the game is run.
         std.fs.cwd().access("resources.rres", .{}) catch {
-            run_cmd.step.dependOn(&pack_assets_run_cmd.step);
+            b.getInstallStep().dependOn(&pack_assets_run_cmd.step);
         };
     }
 }
