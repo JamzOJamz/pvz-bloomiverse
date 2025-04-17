@@ -53,12 +53,13 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("zrres_rl", zrres_rl.module("root"));
 
+    var run_cmd: *std.Build.Step.Run = undefined;
     if (no_bin) {
         b.getInstallStep().dependOn(&exe.step);
     } else {
         b.installArtifact(exe);
 
-        const run_cmd = b.addRunArtifact(exe);
+        run_cmd = b.addRunArtifact(exe);
         run_cmd.step.dependOn(b.getInstallStep());
         if (b.args) |args| {
             run_cmd.addArgs(args);
@@ -90,5 +91,10 @@ pub fn build(b: *std.Build) void {
 
         const pack_step = b.step("pack-assets", "Pack assets to .rres file");
         pack_step.dependOn(&pack_assets_run_cmd.step);
+
+        // Ensure that assets are packed before the game is run.
+        std.fs.cwd().access("resources.rres", .{}) catch {
+            run_cmd.step.dependOn(&pack_assets_run_cmd.step);
+        };
     }
 }
