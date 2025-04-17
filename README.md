@@ -46,7 +46,7 @@ Coming soon!
 
 ## 🎮 Controls
 
-- **Mouse**: Collect sun
+- **Mouse**: Collect sun.
 
 ## 📌 Roadmap
 
